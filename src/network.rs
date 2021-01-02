@@ -29,6 +29,18 @@ impl FullyConnected {
             input: Some(Box::new(input)),
         }
     }
+
+    fn predict(&self, network_input: &[f32]) -> Array1<f32> {
+        if let Some(input_layer) = &self.input {
+            self.weights
+                .as_ref()
+                .unwrap()
+                .dot(&input_layer.predict(network_input))
+                + self.biases.as_ref().unwrap()
+        } else {
+            arr1(network_input)
+        }
+    }
 }
 
 impl From<&[usize]> for FullyConnected {
@@ -38,7 +50,6 @@ impl From<&[usize]> for FullyConnected {
         dims.iter()
             .skip(1)
             .fold(FullyConnected::new(dims[0]), |prev_layer, &layer_size| {
-                eprintln!("{:?}", prev_layer);
                 FullyConnected::stack(prev_layer, layer_size)
             })
     }
@@ -53,6 +64,14 @@ impl From<Vec<usize>> for FullyConnected {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_forward_propagation() {
+        let network = FullyConnected::from(vec![2, 3, 3, 1]);
+        let input = [0., 1.];
+        let output = network.predict(&input);
+        assert_eq!(output.len(), 1);
+    }
 
     #[test]
     fn test_layer_stacking() {
