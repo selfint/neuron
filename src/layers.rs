@@ -4,10 +4,10 @@ use ndarray_rand::RandomExt;
 
 #[derive(Debug)]
 pub struct FullyConnected {
-    size: usize,
-    weights: Option<Array2<f32>>,
-    biases: Option<Array1<f32>>,
-    input: Option<Box<FullyConnected>>,
+    pub size: usize,
+    pub weights: Option<Array2<f32>>,
+    pub biases: Option<Array1<f32>>,
+    pub input: Option<Box<FullyConnected>>,
 }
 
 impl FullyConnected {
