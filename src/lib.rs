@@ -1,3 +1,3 @@
-mod layers;
+pub mod layers;
 
 pub use layers::*;
