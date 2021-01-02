@@ -1,3 +1,3 @@
-pub mod network;
+mod layers;
 
-pub use network::*;
+pub use layers::*;
