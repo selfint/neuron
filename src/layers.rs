@@ -11,7 +11,7 @@ pub struct FullyConnected {
 }
 
 impl FullyConnected {
-    fn new(size: usize) -> Self {
+    pub fn new(size: usize) -> Self {
         FullyConnected {
             size,
             weights: None,
@@ -20,7 +20,7 @@ impl FullyConnected {
         }
     }
 
-    fn stack(input: FullyConnected, size: usize) -> Self {
+    pub fn stack(input: FullyConnected, size: usize) -> Self {
         let distribution = Uniform::new(-0.01, 0.01);
         FullyConnected {
             size,
@@ -30,7 +30,7 @@ impl FullyConnected {
         }
     }
 
-    fn predict(&self, network_input: &[f32]) -> Array1<f32> {
+    pub fn predict(&self, network_input: &[f32]) -> Array1<f32> {
         if let Some(input_layer) = &self.input {
             self.weights
                 .as_ref()
