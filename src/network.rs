@@ -2,6 +2,7 @@ use ndarray::prelude::*;
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
+#[derive(Debug)]
 pub struct FullyConnected {
     size: usize,
     weights: Option<Array2<f32>>,
@@ -30,25 +31,88 @@ impl FullyConnected {
     }
 }
 
+impl From<&[usize]> for FullyConnected {
+    fn from(dims: &[usize]) -> Self {
+        assert!(!dims.is_empty());
+
+        dims.iter()
+            .skip(1)
+            .fold(FullyConnected::new(dims[0]), |prev_layer, &layer_size| {
+                eprintln!("{:?}", prev_layer);
+                FullyConnected::stack(prev_layer, layer_size)
+            })
+    }
+}
+
+impl From<Vec<usize>> for FullyConnected {
+    fn from(dims: Vec<usize>) -> Self {
+        FullyConnected::from(dims.as_slice())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_stack_layers() {
+    fn test_layer_stacking() {
         let input = FullyConnected::new(2);
         let hidden = FullyConnected::stack(input, 3);
+        let output = FullyConnected::stack(hidden, 1);
+
+        // unravel inner layers
+        let hidden = output.input.unwrap();
+        let input = hidden.input.unwrap();
+
+        assert!(input.weights.is_none());
+        assert!(input.biases.is_none());
+        assert_eq!(input.size, 2);
 
         assert!(hidden.weights.is_some());
         assert!(hidden.biases.is_some());
-        assert_eq!(hidden.weights.clone().unwrap().len(), 6);
-        assert_eq!(hidden.biases.clone().unwrap().len(), 3);
-
-        let output = FullyConnected::stack(hidden, 1);
+        assert_eq!(hidden.weights.unwrap().len(), 6);
+        assert_eq!(hidden.biases.unwrap().len(), 3);
 
         assert!(output.weights.is_some());
         assert!(output.biases.is_some());
         assert_eq!(output.weights.unwrap().len(), 3);
         assert_eq!(output.biases.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_fast_layer_stacking() {
+        let network_output = FullyConnected::from(vec![2, 3, 1]);
+        let network_hidden = network_output.input.unwrap();
+        let network_input = network_hidden.input.unwrap();
+
+        let input = FullyConnected::new(2);
+        let hidden = FullyConnected::stack(input, 3);
+        let output = FullyConnected::stack(hidden, 1);
+
+        // unravel inner layers
+        let hidden = output.input.unwrap();
+        let input = hidden.input.unwrap();
+
+        assert_eq!(network_input.weights, input.weights);
+        assert_eq!(network_input.biases, input.biases);
+        assert_eq!(network_input.size, input.size);
+
+        assert_eq!(
+            network_hidden.weights.unwrap().len(),
+            hidden.weights.unwrap().len()
+        );
+        assert_eq!(
+            network_hidden.biases.unwrap().len(),
+            hidden.biases.unwrap().len()
+        );
+
+        assert_eq!(
+            network_output.weights.unwrap().len(),
+            output.weights.unwrap().len()
+        );
+        assert_eq!(
+            network_output.biases.unwrap().len(),
+            output.biases.unwrap().len()
+        );
     }
 }
