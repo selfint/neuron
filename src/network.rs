@@ -45,7 +45,7 @@ impl FullyConnected {
 
 impl From<&[usize]> for FullyConnected {
     fn from(dims: &[usize]) -> Self {
-        assert!(!dims.is_empty());
+        assert!(!dims.is_empty(), "layer size must be non-empty");
 
         dims.iter()
             .skip(1)
@@ -66,10 +66,17 @@ mod tests {
     use super::*;
 
     #[test]
+    #[should_panic(expected = "layer size must be non-empty")]
+    fn test_fast_layer_stacking_edge_case_empty_dims() {
+        FullyConnected::from(vec![]);
+    }
+
+    #[test]
     fn test_forward_propagation() {
         let network = FullyConnected::from(vec![2, 3, 3, 1]);
         let input = [0., 1.];
         let output = network.predict(&input);
+
         assert_eq!(output.len(), 1);
     }
 
