@@ -41,6 +41,28 @@ impl FullyConnected {
             arr1(network_input)
         }
     }
+
+    pub fn build_stack(weights: &[Array2<f32>], biases: &[Array1<f32>]) -> Self {
+        weights.iter().zip(biases.iter()).fold(
+            FullyConnected::new(weights[0].shape()[1]),
+            |prev_layer, (layer_weights, layer_biases)| {
+                eprintln!(
+                    "weights={:?} prev={:?}",
+                    layer_weights.shape(),
+                    prev_layer.size
+                );
+                assert_eq!(layer_weights.shape()[0], layer_biases.len());
+                assert_eq!(layer_weights.shape()[1], prev_layer.size);
+
+                FullyConnected {
+                    size: layer_weights.shape()[0],
+                    weights: Some(layer_weights.clone()),
+                    biases: Some(layer_biases.clone()),
+                    input: Some(Box::new(prev_layer)),
+                }
+            },
+        )
+    }
 }
 
 impl From<&[usize]> for FullyConnected {
@@ -64,6 +86,38 @@ impl From<Vec<usize>> for FullyConnected {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_from_weights_and_biases() {
+        let distribution = Uniform::new(-0.01, 0.01);
+        let weights = vec![
+            Array2::random((3, 2), distribution),
+            Array2::random((1, 3), distribution),
+        ];
+        let biases = vec![
+            Array1::random(3, distribution),
+            Array1::random(1, distribution),
+        ];
+        let network = FullyConnected::build_stack(&weights, &biases);
+
+        // unravel inner layers
+        let hidden = network.input.unwrap();
+        let input = hidden.input.unwrap();
+
+        assert!(input.weights.is_none());
+        assert!(input.biases.is_none());
+        assert_eq!(input.size, 2);
+
+        assert!(hidden.weights.is_some());
+        assert!(hidden.biases.is_some());
+        assert_eq!(hidden.weights.unwrap().len(), 6);
+        assert_eq!(hidden.biases.unwrap().len(), 3);
+
+        assert!(network.weights.is_some());
+        assert!(network.biases.is_some());
+        assert_eq!(network.weights.unwrap().len(), 3);
+        assert_eq!(network.biases.unwrap().len(), 1);
+    }
 
     #[test]
     #[should_panic(expected = "layer size must be non-empty")]
