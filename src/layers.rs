@@ -46,11 +46,6 @@ impl FullyConnected {
         weights.iter().zip(biases.iter()).fold(
             FullyConnected::new(weights[0].shape()[1]),
             |prev_layer, (layer_weights, layer_biases)| {
-                eprintln!(
-                    "weights={:?} prev={:?}",
-                    layer_weights.shape(),
-                    prev_layer.size
-                );
                 assert_eq!(layer_weights.shape()[0], layer_biases.len());
                 assert_eq!(layer_weights.shape()[1], prev_layer.size);
 
