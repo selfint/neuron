@@ -58,6 +58,26 @@ impl FullyConnected {
             },
         )
     }
+
+    pub fn get_weights(&self) -> Vec<&Array2<f32>> {
+        if let Some(input_layer) = &self.input {
+            let mut weights = input_layer.get_weights();
+            weights.push(self.weights.as_ref().unwrap());
+            weights
+        } else {
+            vec![]
+        }
+    }
+
+    pub fn get_biases(&self) -> Vec<&Array1<f32>> {
+        if let Some(input_layer) = &self.input {
+            let mut biases = input_layer.get_biases();
+            biases.push(self.biases.as_ref().unwrap());
+            biases
+        } else {
+            vec![]
+        }
+    }
 }
 
 impl From<&[usize]> for FullyConnected {
@@ -81,6 +101,27 @@ impl From<Vec<usize>> for FullyConnected {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_weights_and_biases() {
+        let distribution = Uniform::new(-0.01, 0.01);
+        let weights = vec![
+            Array2::random((3, 2), distribution),
+            Array2::random((1, 3), distribution),
+        ];
+        let biases = vec![
+            Array1::random(3, distribution),
+            Array1::random(1, distribution),
+        ];
+
+        let network = FullyConnected::build_stack(&weights, &biases);
+        for (original_weights, network_weights) in weights.iter().zip(network.get_weights()) {
+            assert_eq!(original_weights, network_weights);
+        }
+        for (original_biases, network_biases) in biases.iter().zip(network.get_biases()) {
+            assert_eq!(original_biases, network_biases);
+        }
+    }
 
     #[test]
     fn test_from_weights_and_biases() {
