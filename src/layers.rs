@@ -78,6 +78,14 @@ impl FullyConnected {
             vec![]
         }
     }
+
+    pub fn clone_weights(&self) -> Vec<Array2<f32>> {
+        self.get_weights().iter().map(|&w| w.clone()).collect()
+    }
+
+    pub fn clone_biases(&self) -> Vec<Array1<f32>> {
+        self.get_biases().iter().map(|&b| b.clone()).collect()
+    }
 }
 
 impl From<&[usize]> for FullyConnected {
