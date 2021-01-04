@@ -20,6 +20,16 @@ impl FullyConnected {
         }
     }
 
+    pub fn network(dims: &[usize]) -> Self {
+        assert!(!dims.is_empty(), "layer dimensions must be non-empty");
+
+        dims.iter()
+            .skip(1)
+            .fold(FullyConnected::new(dims[0]), |prev_layer, &layer_size| {
+                FullyConnected::stack(prev_layer, layer_size)
+            })
+    }
+
     pub fn stack(input: FullyConnected, size: usize) -> Self {
         let distribution = Uniform::new(-0.01, 0.01);
         FullyConnected {
@@ -86,29 +96,29 @@ impl FullyConnected {
     pub fn clone_biases(&self) -> Vec<Array1<f32>> {
         self.get_biases().iter().map(|&b| b.clone()).collect()
     }
-}
 
-impl From<&[usize]> for FullyConnected {
-    fn from(dims: &[usize]) -> Self {
-        assert!(!dims.is_empty(), "layer size must be non-empty");
-
-        dims.iter()
-            .skip(1)
-            .fold(FullyConnected::new(dims[0]), |prev_layer, &layer_size| {
-                FullyConnected::stack(prev_layer, layer_size)
-            })
-    }
-}
-
-impl From<Vec<usize>> for FullyConnected {
-    fn from(dims: Vec<usize>) -> Self {
-        FullyConnected::from(dims.as_slice())
+    pub fn get_shape(&self) -> Vec<usize> {
+        if let Some(input_layer) = &self.input {
+            let mut shape = input_layer.get_shape();
+            shape.push(self.size);
+            shape
+        } else {
+            vec![self.size]
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_shape() {
+        let dims: Vec<usize> = vec![2, 3, 6, 7];
+        let network = FullyConnected::network(&dims);
+
+        assert_eq!(network.get_shape(), dims);
+    }
 
     #[test]
     fn test_get_weights_and_biases() {
@@ -164,14 +174,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "layer size must be non-empty")]
+    #[should_panic(expected = "layer dimensions must be non-empty")]
     fn test_fast_layer_stacking_edge_case_empty_dims() {
-        FullyConnected::from(vec![]);
+        FullyConnected::network(&[]);
     }
 
     #[test]
     fn test_forward_propagation() {
-        let network = FullyConnected::from(vec![2, 3, 3, 1]);
+        let network = FullyConnected::network(&[2, 3, 3, 1]);
         let input = [0., 1.];
         let output = network.predict(&input);
 
@@ -205,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_fast_layer_stacking() {
-        let network_output = FullyConnected::from(vec![2, 3, 1]);
+        let network_output = FullyConnected::network(&[2, 3, 1]);
         let network_hidden = network_output.input.unwrap();
         let network_input = network_hidden.input.unwrap();
 
