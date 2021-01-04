@@ -2,7 +2,7 @@ use ndarray::prelude::*;
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct FullyConnected {
     pub size: usize,
     pub weights: Option<Array2<f32>>,
