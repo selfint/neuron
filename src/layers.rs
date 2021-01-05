@@ -125,11 +125,33 @@ impl FullyConnected {
             vec![self.size]
         }
     }
+
+    pub fn get_layer(&self, layer: usize) -> Result<&FullyConnected, &'static str> {
+        if layer == self.layer {
+            Ok(&self)
+        } else {
+            if let Some(input_layer) = &self.input {
+                input_layer.get_layer(layer)
+            } else {
+                Err("Layer doesn't exist")
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_layer() {
+        let dims: Vec<usize> = vec![2, 3, 6, 7];
+        let network = FullyConnected::network(&dims);
+
+        for (i, &dim) in dims.iter().enumerate() {
+            assert_eq!(network.get_layer(i).unwrap().size, dim);
+        }
+    }
 
     #[test]
     fn test_shape() {
