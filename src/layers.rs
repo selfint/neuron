@@ -8,6 +8,7 @@ pub struct FullyConnected {
     pub weights: Option<Array2<f32>>,
     pub biases: Option<Array1<f32>>,
     pub input: Option<Box<FullyConnected>>,
+    pub layer: usize,
 }
 
 impl FullyConnected {
@@ -17,6 +18,7 @@ impl FullyConnected {
             weights: None,
             biases: None,
             input: None,
+            layer: 0,
         }
     }
 
@@ -32,11 +34,13 @@ impl FullyConnected {
 
     pub fn stack(input: FullyConnected, size: usize) -> Self {
         let distribution = Uniform::new(-0.01, 0.01);
+        let layer = input.layer + 1;
         FullyConnected {
             size,
             weights: Some(Array2::random((size, input.size), distribution)),
             biases: Some(Array1::random(size, distribution)),
             input: Some(Box::new(input)),
+            layer,
         }
     }
 
@@ -58,12 +62,14 @@ impl FullyConnected {
             |prev_layer, (layer_weights, layer_biases)| {
                 assert_eq!(layer_weights.shape()[0], layer_biases.len());
                 assert_eq!(layer_weights.shape()[1], prev_layer.size);
+                let layer = prev_layer.layer + 1;
 
                 FullyConnected {
                     size: layer_weights.shape()[0],
                     weights: Some(layer_weights.clone()),
                     biases: Some(layer_biases.clone()),
                     input: Some(Box::new(prev_layer)),
+                    layer,
                 }
             },
         )
@@ -108,6 +114,7 @@ impl FullyConnected {
             vec![]
         }
     }
+
     pub fn clone_weights(&self) -> Vec<Array2<f32>> {
         self.get_weights().iter().map(|&w| w.clone()).collect()
     }
