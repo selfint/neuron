@@ -89,6 +89,25 @@ impl FullyConnected {
         }
     }
 
+    pub fn get_weights_mut(&mut self) -> Vec<&mut Array2<f32>> {
+        if let Some(input_layer) = &mut self.input {
+            let mut weights = input_layer.get_weights_mut();
+            weights.push(self.weights.as_mut().unwrap());
+            weights
+        } else {
+            vec![]
+        }
+    }
+
+    pub fn get_biases_mut(&mut self) -> Vec<&mut Array1<f32>> {
+        if let Some(input_layer) = &mut self.input {
+            let mut biases = input_layer.get_biases_mut();
+            biases.push(self.biases.as_mut().unwrap());
+            biases
+        } else {
+            vec![]
+        }
+    }
     pub fn clone_weights(&self) -> Vec<Array2<f32>> {
         self.get_weights().iter().map(|&w| w.clone()).collect()
     }
