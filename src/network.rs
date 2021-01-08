@@ -1,4 +1,4 @@
-use crate::layers::FeedForwardLayer;
+use crate::layer::FeedForwardLayer;
 use ndarray::prelude::*;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -40,7 +40,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::layers::ReLuLayer;
+    use crate::layers::relu::ReLuLayer;
 
     #[test]
     fn test_network_predict() {
