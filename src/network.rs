@@ -40,28 +40,12 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[derive(Clone, PartialEq)]
-    struct TestLayer(usize);
-
-    impl FeedForwardLayer for TestLayer {
-        fn forward(&self, _input: &Array1<f32>) -> Array1<f32> {
-            arr1(&vec![0.; self.0])
-        }
-
-        fn input_size(&self) -> usize {
-            self.0
-        }
-
-        fn output_size(&self) -> usize {
-            self.0
-        }
-    }
+    use crate::layers::ReLuLayer;
 
     #[test]
     fn test_network_predict() {
-        let l1 = TestLayer(3);
-        let l2 = TestLayer(1);
+        let l1 = ReLuLayer::new(3, 2);
+        let l2 = ReLuLayer::new(1, 3);
 
         let network = FeedForwardNetwork::new(&[l1, l2]);
 
@@ -72,8 +56,8 @@ mod tests {
 
     #[test]
     fn test_network_is_cloneable() {
-        let l1 = TestLayer(3);
-        let l2 = TestLayer(1);
+        let l1 = ReLuLayer::new(3, 2);
+        let l2 = ReLuLayer::new(1, 3);
 
         let network = FeedForwardNetwork::new(&[l1, l2]);
         let network2 = network.clone();
