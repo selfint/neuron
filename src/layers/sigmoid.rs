@@ -4,18 +4,18 @@ use ndarray_rand::RandomExt;
 
 use crate::layer::{FeedForwardLayer, Layer};
 
-#[derive(Clone, PartialEq)]
-pub struct ReLuLayer {
+#[derive(Clone, PartialEq, Debug)]
+pub struct SigmoidLayer {
     output_size: usize,
     input_size: usize,
     weights: Array2<f32>,
     biases: Array1<f32>,
 }
 
-impl ReLuLayer {
+impl SigmoidLayer {
     pub fn new(output_size: usize, input_size: usize) -> Self {
         let distribution = Uniform::new(-0.01, 0.01);
-        ReLuLayer {
+        SigmoidLayer {
             output_size,
             input_size,
             weights: Array2::random((output_size, input_size), distribution),
@@ -24,7 +24,7 @@ impl ReLuLayer {
     }
 }
 
-impl Layer for ReLuLayer {
+impl Layer for SigmoidLayer {
     fn input_size(&self) -> usize {
         self.input_size
     }
@@ -59,7 +59,7 @@ impl Layer for ReLuLayer {
     }
 }
 
-impl FeedForwardLayer for ReLuLayer {
+impl FeedForwardLayer for SigmoidLayer {
     fn activate(&self, input: &Array1<f32>) -> Array1<f32> {
         (self.weights.dot(input) + &self.biases).map(|&x| if x > 0. { x } else { 0. })
     }
