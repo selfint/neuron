@@ -6,7 +6,7 @@ pub struct FeedForwardNetwork<L>
 where
     L: FeedForwardLayer,
 {
-    layers: Vec<L>,
+    pub layers: Vec<L>,
 }
 
 impl<L> FeedForwardNetwork<L>
@@ -25,6 +25,10 @@ where
             .fold(input.clone(), |prev_layer_output, layer| {
                 layer.forward(&prev_layer_output)
             })
+    }
+
+    pub fn shape(&self) -> Vec<usize> {
+        self.layers.iter().map(|l| l.output_size() ).collect()
     }
 }
 
