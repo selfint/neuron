@@ -1,6 +1,7 @@
 use ndarray::prelude::*;
+use std::fmt::Debug;
 
-pub trait Layer: Clone + PartialEq {
+pub trait Layer: Clone + PartialEq + Debug {
     fn input_size(&self) -> usize;
     fn output_size(&self) -> usize;
     fn get_weights(&self) -> &Array2<f32>;

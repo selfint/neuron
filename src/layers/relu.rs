@@ -4,7 +4,7 @@ use ndarray_rand::RandomExt;
 
 use crate::layer::{FeedForwardLayer, Layer};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ReLuLayer {
     output_size: usize,
     input_size: usize,
