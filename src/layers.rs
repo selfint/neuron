@@ -2,147 +2,50 @@ use ndarray::prelude::*;
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
-#[derive(Debug, PartialEq)]
-pub struct FullyConnected {
-    pub size: usize,
-    pub weights: Option<Array2<f32>>,
-    pub biases: Option<Array1<f32>>,
-    pub input: Option<Box<FullyConnected>>,
-    pub layer: usize,
+pub trait Layer: Clone {
+    fn forward(&self, input: &Array1<f32>) -> Array1<f32>;
+    fn input_size(&self) -> usize;
+    fn output_size(&self) -> usize;
 }
 
-impl FullyConnected {
-    pub fn new(size: usize) -> Self {
-        FullyConnected {
-            size,
-            weights: None,
-            biases: None,
-            input: None,
-            layer: 0,
-        }
-    }
+#[derive(Clone)]
+pub struct ReLuLayer {
+    size: usize,
+    inputs: usize,
+    weights: Array2<f32>,
+    biases: Array1<f32>,
+}
 
-    pub fn network(dims: &[usize]) -> Self {
-        assert!(!dims.is_empty(), "layer dimensions must be non-empty");
-
-        dims.iter()
-            .skip(1)
-            .fold(FullyConnected::new(dims[0]), |prev_layer, &layer_size| {
-                FullyConnected::stack(prev_layer, layer_size)
-            })
-    }
-
-    pub fn stack(input: FullyConnected, size: usize) -> Self {
+impl ReLuLayer {
+    pub fn new(size: usize, inputs: usize) -> Self {
         let distribution = Uniform::new(-0.01, 0.01);
-        let layer = input.layer + 1;
-        FullyConnected {
+        ReLuLayer {
             size,
-            weights: Some(Array2::random((size, input.size), distribution)),
-            biases: Some(Array1::random(size, distribution)),
-            input: Some(Box::new(input)),
-            layer,
+            inputs,
+            weights: Array2::random((size, inputs), distribution),
+            biases: Array1::random(size, distribution),
         }
     }
+}
 
-    pub fn predict(&self, network_input: &[f32]) -> Array1<f32> {
-        if let Some(input_layer) = &self.input {
-            self.weights
-                .as_ref()
-                .unwrap()
-                .dot(&input_layer.predict(network_input))
-                + self.biases.as_ref().unwrap()
-        } else {
-            arr1(network_input)
-        }
-    }
-
-    pub fn build_stack(weights: &[Array2<f32>], biases: &[Array1<f32>]) -> Self {
-        weights.iter().zip(biases.iter()).fold(
-            FullyConnected::new(weights[0].shape()[1]),
-            |prev_layer, (layer_weights, layer_biases)| {
-                assert_eq!(layer_weights.shape()[0], layer_biases.len());
-                assert_eq!(layer_weights.shape()[1], prev_layer.size);
-                let layer = prev_layer.layer + 1;
-
-                FullyConnected {
-                    size: layer_weights.shape()[0],
-                    weights: Some(layer_weights.clone()),
-                    biases: Some(layer_biases.clone()),
-                    input: Some(Box::new(prev_layer)),
-                    layer,
-                }
-            },
-        )
-    }
-
-    pub fn get_weights(&self) -> Vec<&Array2<f32>> {
-        if let Some(input_layer) = &self.input {
-            let mut weights = input_layer.get_weights();
-            weights.push(self.weights.as_ref().unwrap());
-            weights
-        } else {
-            vec![]
-        }
-    }
-
-    pub fn get_biases(&self) -> Vec<&Array1<f32>> {
-        if let Some(input_layer) = &self.input {
-            let mut biases = input_layer.get_biases();
-            biases.push(self.biases.as_ref().unwrap());
-            biases
-        } else {
-            vec![]
-        }
-    }
-
-    pub fn get_weights_mut(&mut self) -> Vec<&mut Array2<f32>> {
-        if let Some(input_layer) = &mut self.input {
-            let mut weights = input_layer.get_weights_mut();
-            weights.push(self.weights.as_mut().unwrap());
-            weights
-        } else {
-            vec![]
-        }
-    }
-
-    pub fn get_biases_mut(&mut self) -> Vec<&mut Array1<f32>> {
-        if let Some(input_layer) = &mut self.input {
-            let mut biases = input_layer.get_biases_mut();
-            biases.push(self.biases.as_mut().unwrap());
-            biases
-        } else {
-            vec![]
-        }
-    }
-
-    pub fn clone_weights(&self) -> Vec<Array2<f32>> {
-        self.get_weights().iter().map(|&w| w.clone()).collect()
-    }
-
-    pub fn clone_biases(&self) -> Vec<Array1<f32>> {
-        self.get_biases().iter().map(|&b| b.clone()).collect()
-    }
-
-    pub fn get_shape(&self) -> Vec<usize> {
-        if let Some(input_layer) = &self.input {
-            let mut shape = input_layer.get_shape();
-            shape.push(self.size);
-            shape
-        } else {
-            vec![self.size]
-        }
-    }
-
-    pub fn get_layer(&self, layer: usize) -> Result<&FullyConnected, &'static str> {
-        if layer == self.layer {
-            Ok(&self)
-        } else {
-            if let Some(input_layer) = &self.input {
-                input_layer.get_layer(layer)
+impl Layer for ReLuLayer {
+    fn forward(&self, input: &Array1<f32>) -> Array1<f32> {
+        let relu = |&x| {
+            if x > 0. {
+                x
             } else {
-                Err("Layer doesn't exist")
+                0.
             }
-        }
+        };
+        (self.weights.dot(input) + &self.biases).map(relu)
+    }
+
+    fn input_size(&self) -> usize {
+        self.inputs
+    }
+
+    fn output_size(&self) -> usize {
+        self.size
     }
 }
 
@@ -151,150 +54,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_layer() {
-        let dims: Vec<usize> = vec![2, 3, 6, 7];
-        let network = FullyConnected::network(&dims);
-
-        for (i, &dim) in dims.iter().enumerate() {
-            assert_eq!(network.get_layer(i).unwrap().size, dim);
-        }
+    fn test_relu_layer() {
+        let layer = ReLuLayer::new(3, 2);
+        let output = layer.forward(&arr1(&[1., 0.]));
+        assert_eq!(output.len(), 3);
     }
 
     #[test]
-    fn test_shape() {
-        let dims: Vec<usize> = vec![2, 3, 6, 7];
-        let network = FullyConnected::network(&dims);
-
-        assert_eq!(network.get_shape(), dims);
-    }
-
-    #[test]
-    fn test_get_weights_and_biases() {
-        let distribution = Uniform::new(-0.01, 0.01);
-        let weights = vec![
-            Array2::random((3, 2), distribution),
-            Array2::random((1, 3), distribution),
-        ];
-        let biases = vec![
-            Array1::random(3, distribution),
-            Array1::random(1, distribution),
-        ];
-
-        let network = FullyConnected::build_stack(&weights, &biases);
-        for (original_weights, network_weights) in weights.iter().zip(network.get_weights()) {
-            assert_eq!(original_weights, network_weights);
-        }
-        for (original_biases, network_biases) in biases.iter().zip(network.get_biases()) {
-            assert_eq!(original_biases, network_biases);
-        }
-    }
-
-    #[test]
-    fn test_from_weights_and_biases() {
-        let distribution = Uniform::new(-0.01, 0.01);
-        let weights = vec![
-            Array2::random((3, 2), distribution),
-            Array2::random((1, 3), distribution),
-        ];
-        let biases = vec![
-            Array1::random(3, distribution),
-            Array1::random(1, distribution),
-        ];
-        let network = FullyConnected::build_stack(&weights, &biases);
-
-        // unravel inner layers
-        let hidden = network.input.unwrap();
-        let input = hidden.input.unwrap();
-
-        assert!(input.weights.is_none());
-        assert!(input.biases.is_none());
-        assert_eq!(input.size, 2);
-
-        assert!(hidden.weights.is_some());
-        assert!(hidden.biases.is_some());
-        assert_eq!(hidden.weights.unwrap().len(), 6);
-        assert_eq!(hidden.biases.unwrap().len(), 3);
-
-        assert!(network.weights.is_some());
-        assert!(network.biases.is_some());
-        assert_eq!(network.weights.unwrap().len(), 3);
-        assert_eq!(network.biases.unwrap().len(), 1);
-    }
-
-    #[test]
-    #[should_panic(expected = "layer dimensions must be non-empty")]
-    fn test_fast_layer_stacking_edge_case_empty_dims() {
-        FullyConnected::network(&[]);
-    }
-
-    #[test]
-    fn test_forward_propagation() {
-        let network = FullyConnected::network(&[2, 3, 3, 1]);
-        let input = [0., 1.];
-        let output = network.predict(&input);
-
-        assert_eq!(output.len(), 1);
-    }
-
-    #[test]
-    fn test_layer_stacking() {
-        let input = FullyConnected::new(2);
-        let hidden = FullyConnected::stack(input, 3);
-        let output = FullyConnected::stack(hidden, 1);
-
-        // unravel inner layers
-        let hidden = output.input.unwrap();
-        let input = hidden.input.unwrap();
-
-        assert!(input.weights.is_none());
-        assert!(input.biases.is_none());
-        assert_eq!(input.size, 2);
-
-        assert!(hidden.weights.is_some());
-        assert!(hidden.biases.is_some());
-        assert_eq!(hidden.weights.unwrap().len(), 6);
-        assert_eq!(hidden.biases.unwrap().len(), 3);
-
-        assert!(output.weights.is_some());
-        assert!(output.biases.is_some());
-        assert_eq!(output.weights.unwrap().len(), 3);
-        assert_eq!(output.biases.unwrap().len(), 1);
-    }
-
-    #[test]
-    fn test_fast_layer_stacking() {
-        let network_output = FullyConnected::network(&[2, 3, 1]);
-        let network_hidden = network_output.input.unwrap();
-        let network_input = network_hidden.input.unwrap();
-
-        let input = FullyConnected::new(2);
-        let hidden = FullyConnected::stack(input, 3);
-        let output = FullyConnected::stack(hidden, 1);
-
-        // unravel inner layers
-        let hidden = output.input.unwrap();
-        let input = hidden.input.unwrap();
-
-        assert_eq!(network_input.weights, input.weights);
-        assert_eq!(network_input.biases, input.biases);
-        assert_eq!(network_input.size, input.size);
-
-        assert_eq!(
-            network_hidden.weights.unwrap().len(),
-            hidden.weights.unwrap().len()
-        );
-        assert_eq!(
-            network_hidden.biases.unwrap().len(),
-            hidden.biases.unwrap().len()
-        );
-
-        assert_eq!(
-            network_output.weights.unwrap().len(),
-            output.weights.unwrap().len()
-        );
-        assert_eq!(
-            network_output.biases.unwrap().len(),
-            output.biases.unwrap().len()
-        );
+    fn size_test() {
+        let layer = ReLuLayer::new(3, 2);
+        assert_eq!(layer.input_size(), 2);
+        assert_eq!(layer.output_size(), 3);
     }
 }
