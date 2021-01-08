@@ -2,13 +2,13 @@ use ndarray::prelude::*;
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
-pub trait Layer: Clone {
+pub trait FeedForwardLayer: Clone + PartialEq {
     fn forward(&self, input: &Array1<f32>) -> Array1<f32>;
     fn input_size(&self) -> usize;
     fn output_size(&self) -> usize;
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct ReLuLayer {
     size: usize,
     inputs: usize,
@@ -28,7 +28,7 @@ impl ReLuLayer {
     }
 }
 
-impl Layer for ReLuLayer {
+impl FeedForwardLayer for ReLuLayer {
     fn forward(&self, input: &Array1<f32>) -> Array1<f32> {
         let relu = |&x| {
             if x > 0. {
