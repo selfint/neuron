@@ -9,10 +9,6 @@ where
     layers: Vec<L>,
 }
 
-trait Predict {
-    fn predict(&self, input: &Array1<f32>) -> Array1<f32>;
-}
-
 impl<L> FeedForwardNetwork<L>
 where
     L: FeedForwardLayer,
@@ -22,13 +18,8 @@ where
             layers: layers.into(),
         }
     }
-}
 
-impl<L> Predict for FeedForwardNetwork<L>
-where
-    L: FeedForwardLayer,
-{
-    fn predict(&self, input: &Array1<f32>) -> Array1<f32> {
+    pub fn predict(&self, input: &Array1<f32>) -> Array1<f32> {
         self.layers
             .iter()
             .fold(input.clone(), |prev_layer_output, layer| {
