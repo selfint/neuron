@@ -9,6 +9,13 @@ where
     pub layers: Vec<L>,
 }
 
+pub trait FeedForwardNetworkTrait {
+    fn predict(&self, input: &Array1<f32>) -> Array1<f32>;
+    fn shape(&self) -> Vec<usize>;
+    fn get_weights(&self) -> Vec<&Array2<f32>>;
+    fn get_biases(&self) -> Vec<&Array1<f32>>;
+}
+
 impl<L> FeedForwardNetwork<L>
 where
     L: FeedForwardLayer,
@@ -18,8 +25,13 @@ where
             layers: layers.into(),
         }
     }
+}
 
-    pub fn predict(&self, input: &Array1<f32>) -> Array1<f32> {
+impl<L> FeedForwardNetworkTrait for FeedForwardNetwork<L>
+where
+    L: FeedForwardLayer,
+{
+    fn predict(&self, input: &Array1<f32>) -> Array1<f32> {
         self.layers
             .iter()
             .fold(input.clone(), |prev_layer_output, layer| {
@@ -27,15 +39,15 @@ where
             })
     }
 
-    pub fn shape(&self) -> Vec<usize> {
+    fn shape(&self) -> Vec<usize> {
         self.layers.iter().map(|l| l.output_size()).collect()
     }
 
-    pub fn get_weights(&self) -> Vec<&Array2<f32>> {
+    fn get_weights(&self) -> Vec<&Array2<f32>> {
         self.layers.iter().map(|l| l.get_weights()).collect()
     }
 
-    pub fn get_biases(&self) -> Vec<&Array1<f32>> {
+    fn get_biases(&self) -> Vec<&Array1<f32>> {
         self.layers.iter().map(|l| l.get_biases()).collect()
     }
 }
