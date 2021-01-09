@@ -1,5 +1,6 @@
 use crate::layer::FeedForwardLayer;
 use ndarray::prelude::*;
+use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct FeedForwardNetwork<L>
@@ -9,7 +10,7 @@ where
     pub layers: Vec<L>,
 }
 
-pub trait FeedForwardNetworkTrait {
+pub trait FeedForwardNetworkTrait: Debug + PartialEq + Clone {
     fn predict(&self, input: &Array1<f32>) -> Array1<f32>;
     fn shape(&self) -> Vec<usize>;
     fn get_weights(&self) -> Vec<&Array2<f32>>;
