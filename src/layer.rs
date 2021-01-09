@@ -11,7 +11,7 @@ pub trait Layer: Clone + PartialEq + Debug + Sized {
     fn from_weights_and_biases(weights: Array2<f32>, biases: Array1<f32>) -> Self;
 }
 
-pub trait FeedForwardLayer: Layer + Clone + PartialEq {
+pub trait FeedForwardLayer: Layer {
     fn activate(&self, input: &Array1<f32>) -> Array1<f32>;
     fn forward(&self, input: &Array1<f32>) -> Array1<f32> {
         self.activate(&(self.get_weights().dot(input) + self.get_biases()))
