@@ -28,7 +28,15 @@ where
     }
 
     pub fn shape(&self) -> Vec<usize> {
-        self.layers.iter().map(|l| l.output_size() ).collect()
+        self.layers.iter().map(|l| l.output_size()).collect()
+    }
+
+    pub fn get_weights(&self) -> Vec<&Array2<f32>> {
+        self.layers.iter().map(|l| l.get_weights()).collect()
+    }
+
+    pub fn get_biases(&self) -> Vec<&Array1<f32>> {
+        self.layers.iter().map(|l| l.get_biases()).collect()
     }
 }
 
